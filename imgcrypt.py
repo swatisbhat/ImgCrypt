@@ -1,110 +1,128 @@
+# libraries used
 import hashlib
-import numpy as np
 import binstr
-import binascii
-import os
 
 # Block size = 4 bytes
-LT=4
+LT = 4
 
-#SBOX=np.empty([LT,LT])
-#Eky=np.empty(32)
-SBOX=[[""]*LT]*LT
-TBOX=[[""]*LT]*LT
-W=[bin(0)[2:].zfill(8) for x in range(4)]
-Eky=[""]*32
-Ky=np.empty(100)
+# SBOX and TBOX Initialisation
+SBOX = [[""]*LT]*LT
+TBOX = [[""]*LT]*LT
 
-E=[]*LT
+# Word array Initialisation ( required for encryption )
+W = [bin(0)[2:].zfill(8) for x in range(4)]
 
-def encryption_key_gen(Ky,D):
-    p1=p2=p3=0
-    L1=len(Ky)
-    for i in range(0,32):
-        if(i%2==0):
-            Eky[i]=D[p1]
-            p1+=1
-            print "Eky[%d] = %s\n"%(i,Eky[i])
+# Key used to generate SBOX and TBOX
+Eky = [""]*32
+
+# User input key ( >= 16 Bytes )
+Ky = []
+
+
+def encryption_key_gen(EKy, Ky, D):
+    '''
+    Generates 32 Bytes EKy from user input Ky ( >= 16 Bytes ) 
+    and D ( MD5 hash of Ky = 16 Bytes )
+    '''
+    p1 = p2 = p3 = 0
+    L1 = len(Ky)
+    for i in range(0, 32):
+        if(i % 2 == 0):
+            Eky[i] = D[p1]
+            p1 += 1
         else:
-            Eky[i]=binstr.b_xor(binstr.b_xor(D[p2],D[++p2]),Ky[(p3)%L1])
-            p3+=1
-            print "Eky[%d] = %s\n"%(i,Eky[i])
+            Eky[i] = binstr.b_xor(binstr.b_xor(D[p2], D[++p2]), Ky[(p3) % L1])
+            p3 += 1
     return Eky
 
-def SBOX_generation(Eky):
-    p=0
-    for i in range(0,LT):
-        for j in range(0,LT):
-            SBOX[i][j]=Eky[p]
-            p=p+1
 
-def TBOX_generation(Eky):
-    p=16
-    for i in range(0,LT):
-        for j in range(0,LT):
-            TBOX[i][j]=Eky[p]
-            p=p+1
+def SBOX_generation(SBOX, Eky):
+    '''
+    Generates LT x LT SBOX using EKy
+    '''
+    p = 0
+    for i in range(0, LT):
+        for j in range(0, LT):
+            SBOX[i][j] = Eky[p]
+            p = p + 1
 
-def WORD_generation(SBOX):
-    for i in range(0,LT):
-        for j in range(0,LT):
-            W[i]=binstr.b_xor(W[i],SBOX[i][j])
 
-def Transposition_Index_Generation(TBOX,j):
-    TIndex=0
-    for i in range(0,LT):
-        TIndex=TIndex<<i
-        TIndex=int(binstr.b_or(bin(TIndex)[2:].zfill(8),TBOX[j][i]),2)
+def TBOX_generation(TBOX, Eky):
+    '''
+    Generates LT x LT TBOX using EKy
+    '''
+    p = 16
+    for i in range(0, LT):
+        for j in range(0, LT):
+            TBOX[i][j] = Eky[p]
+            p = p + 1
+
+
+def WORD_generation(SBOX, W):
+    '''
+    Generates of 1 x LT WORD array by column wise XORing of SBOX 
+    ( used for encryption )
+    '''
+    for i in range(0, LT):
+        for j in range(0, LT):
+            W[i] = binstr.b_xor(W[i], SBOX[i][j])
+
+
+def transposition_index_generation(TBOX, j):
+    '''
+    Used for transposition of ciphered Bytes among N places
+    ( N - size of secret file ) using TBOX
+    '''
+    TIndex = 0
+    print 1, TIndex
+    for i in range(0, LT):
+        TIndex = TIndex << i
+        TIndex = int(binstr.b_or(bin(TIndex)[2:].zfill(8), TBOX[j][i]), 2)
     return TIndex
 
 
-Key=raw_input("Enter key >=16 bytes: \n")
+if __name__ == '__main__':
 
-s=bytearray()
-s.extend(Key)
+    # take user input for key ( >= 16 Bytes )
+    user_input_key = bytearray(raw_input("Enter key >=16 bytes: "))
 
-Ky=[bin(x)[2:].zfill(8) for x in s]
+    # Ky is the array of Bytes of user_input_key , each Byte represented in binary form as a string
+    Ky = [bin(x)[2:].zfill(8) for x in user_input_key]
 
-#print "Ky:   ",Ky
+    # Intermediate output #1
+    print 'Ky ( user input key )\nSize : ', len(Ky), '\n', Ky, '\n\n'
 
-Digest_string=hashlib.md5(Key).hexdigest()
-b=bytearray.fromhex(Digest_string)
-D=[bin(x)[2:].zfill(8) for x in b]
-print "Digest_string =",Digest_string
-print D
+    # Generation of digest string from Ky
+    digest_string_in_hex = hashlib.md5(user_input_key).hexdigest()
+    digest_string = bytearray.fromhex(digest_string_in_hex)
 
-encryption_key_gen(Ky,D)
-SBOX_generation(Eky)
-TBOX_generation(Eky)
-WORD_generation(SBOX)
+    # Intermediate output #2
+    print 'Digest String in hex\nSize : ', len(
+        digest_string_in_hex), '\n', digest_string_in_hex, '\n'
 
-print Transposition_Index_Generation(TBOX,0)
+    # D is the array of Bytes of the digest string generated, each Byte represented in binary form as a string
+    D = [bin(x)[2:].zfill(8) for x in digest_string]
 
-print "SBOX:  ",SBOX
-print "TBOX:  ",TBOX
-print "W:   ",W
+    # Intermediate output #2
+    print 'D\nSize : ', len(D), '\n', D, '\n\n'
 
-#print "Binary digest length: ",len(bin(int(Digest_string,16))[2:].zfill(8))
-#binascii gives correct length of 16 bytes for md5
-#print "Binascii : ",binascii.unhexlify(Digest_string)
-#print "Length of binary:  ",len(''.join('{0:08b}'.format(ord(x),'b')for x in Digest_string))
+    # Intermediate output #3
+    Eky1 = encryption_key_gen(Eky, Ky, D)
+    print 'EKy ( generated from Ky and D ) \nSize : ', len(
+        Eky1), '\n', Eky1, '\n\n'
 
-# N = size of bmp image in bytes - will always be a multiple of 4
-statinfo=os.stat('lena_gray.bmp')
-# gives size of file in bytes
-# can also use os.path.getsize("lena_gray.bmp")
-N=statinfo.st_size
+    # Intermediate output #4
+    SBOX_generation(SBOX, Eky1)
+    print 'SBOX ( LT x LT ) ( LT = 4 )\n', SBOX, '\n\n'
 
-IndexArray=[0]*N
-SrtB=[0]*LT
+    # Intermediate output #5
+    TBOX_generation(TBOX, Eky1)
+    print 'TBOX ( LT x LT ) ( LT = 4 )\n', TBOX, '\n\n'
 
-# storing the contents bmp into byte array
-# every element in byte array in one byte long
-# we consider groups of LT bytes together for encryption i.e LT=4
-with open("lena_gray.bmp", "rb") as imageFile:
-    f=imageFile.read()
-    S=bytearray(f)
+    # Intermediate output #6
+    WORD_generation(SBOX, W)
+    print 'WORD ( 1 x LT ) ( LT = 4 )\n', W, '\n\n'
 
-# sending first 4 bytes
-#Encrypt(S)
-#print "Even parity test - ",EvenParity(binstr.b_xor(W[0],bin(S[0])[2:].zfill(8)))," W[0] = ",W[0]," S[0] ",bin(S[0])[2:].zfill(8)
+    # Intermediate output #7
+    TIndex1 = transposition_index_generation(TBOX, 3)
+    print 'TIndex ( 0 < TIndex < N ) ( N - size of secret file in Bytes ) \n', TIndex1, '\n\n'
