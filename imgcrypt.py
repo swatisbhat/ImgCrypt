@@ -6,14 +6,14 @@ import binstr
 LT = 4
 
 # SBOX and TBOX Initialisation
-SBOX = [[""]*LT]*LT
-TBOX = [[""]*LT]*LT
+SBOX = [['' for i in range(LT)] for j in range(LT)]
+TBOX = [['' for i in range(LT)] for j in range(LT)]
 
 # Word array Initialisation ( required for encryption )
 W = [bin(0)[2:].zfill(8) for x in range(4)]
 
 # Key used to generate SBOX and TBOX
-Eky = [""]*32
+Eky = ['' for i in range(32)]
 
 # User input key ( >= 16 Bytes )
 Ky = []
@@ -65,7 +65,7 @@ def WORD_generation(SBOX, W):
     '''
     for i in range(0, LT):
         for j in range(0, LT):
-            W[i] = binstr.b_xor(W[i], SBOX[i][j])
+            W[i] = binstr.b_xor(W[i], SBOX[j][i])
 
 
 def transposition_index_generation(TBOX, j):
@@ -83,46 +83,52 @@ def transposition_index_generation(TBOX, j):
 
 if __name__ == '__main__':
 
-    # take user input for key ( >= 16 Bytes )
-    user_input_key = bytearray(raw_input("Enter key >=16 bytes: "))
+            # take user input for key ( >= 16 Bytes )
+            # user_input_key = bytearray(raw_input("Enter key >=16 bytes: "))
 
-    # Ky is the array of Bytes of user_input_key , each Byte represented in binary form as a string
-    Ky = [bin(x)[2:].zfill(8) for x in user_input_key]
+    with open('test_cases.txt', 'r') as f:
+        for line in f.read().split('\n'):
+            user_input_key = bytearray(line)
 
-    # Intermediate output #1
-    print 'Ky ( user input key )\nSize : ', len(Ky), '\n', Ky, '\n\n'
+            if len(user_input_key) < 16:
+                print "Key must be of length >= 16"
+                exit(0)
 
-    # Generation of digest string from Ky
-    digest_string_in_hex = hashlib.md5(user_input_key).hexdigest()
-    digest_string = bytearray.fromhex(digest_string_in_hex)
+            # Ky is the array of Bytes of user_input_key , each Byte represented in binary form as a string
+            Ky = [bin(x)[2:].zfill(8) for x in user_input_key]
 
-    # Intermediate output #2
-    print 'Digest String in hex\nSize : ', len(
-        digest_string_in_hex), '\n', digest_string_in_hex, '\n'
+            # Intermediate output #1
+            print 'Ky ( user input key )\nSize : ', len(Ky), '\n', Ky, '\n\n'
 
-    # D is the array of Bytes of the digest string generated, each Byte represented in binary form as a string
-    D = [bin(x)[2:].zfill(8) for x in digest_string]
+            # Generation of digest string from Ky
+            digest_string_in_hex = hashlib.md5(user_input_key).hexdigest()
+            digest_string = bytearray.fromhex(digest_string_in_hex)
 
-    # Intermediate output #2
-    print 'D\nSize : ', len(D), '\n', D, '\n\n'
+            # Intermediate output #2
+            print 'Digest String in hex\nSize : ', len(digest_string_in_hex), '\n', digest_string_in_hex, '\n'
 
-    # Intermediate output #3
-    Eky1 = encryption_key_gen(Eky, Ky, D)
-    print 'EKy ( generated from Ky and D ) \nSize : ', len(
-        Eky1), '\n', Eky1, '\n\n'
+            # D is the array of Bytes of the digest string generated, each Byte represented in binary form as a string
+            D = [bin(x)[2:].zfill(8) for x in digest_string]
 
-    # Intermediate output #4
-    SBOX_generation(SBOX, Eky1)
-    print 'SBOX ( LT x LT ) ( LT = 4 )\n', SBOX, '\n\n'
+            # Intermediate output #2
+            print 'D\nSize : ', len(D), '\n', D, '\n\n'
 
-    # Intermediate output #5
-    TBOX_generation(TBOX, Eky1)
-    print 'TBOX ( LT x LT ) ( LT = 4 )\n', TBOX, '\n\n'
+            # Intermediate output #3
+            Eky1 = encryption_key_gen(Eky, Ky, D)
+            print 'EKy ( generated from Ky and D ) \nSize : ', len(Eky1), '\n', Eky1, '\n\n'
 
-    # Intermediate output #6
-    WORD_generation(SBOX, W)
-    print 'WORD ( 1 x LT ) ( LT = 4 )\n', W, '\n\n'
+            # Intermediate output #4
+            SBOX_generation(SBOX, Eky1)
+            print 'SBOX ( LT x LT ) ( LT = 4 )\n', SBOX, '\n\n'
 
-    # Intermediate output #7
-    TIndex1 = transposition_index_generation(TBOX, 3)
-    print 'TIndex ( 0 < TIndex < N ) ( N - size of secret file in Bytes ) \n', TIndex1, '\n\n'
+            # Intermediate output #5
+            TBOX_generation(TBOX, Eky1)
+            print 'TBOX ( LT x LT ) ( LT = 4 )\n', TBOX, '\n\n'
+
+            # Intermediate output #6
+            WORD_generation(SBOX, W)
+            print 'WORD ( 1 x LT ) ( LT = 4 )\n', W, '\n\n'
+
+            # Intermediate output #7
+            TIndex1 = transposition_index_generation(TBOX, 3)
+            print 'TIndex ( 0 < TIndex < N ) ( N - size of secret file in Bytes ) \n', TIndex1, '\n\n'
