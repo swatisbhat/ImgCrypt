@@ -31,7 +31,8 @@ def encryption_key_gen(EKy, Ky, D):
             Eky[i] = D[p1]
             p1 += 1
         else:
-            Eky[i] = binstr.b_xor(binstr.b_xor(D[p2], D[++p2]), Ky[(p3) % L1])
+            p4 = p2 + 1
+            Eky[i] = binstr.b_xor(binstr.b_xor(D[p2], D[p4]), Ky[(p3) % L1])
             p3 += 1
     return Eky
 
