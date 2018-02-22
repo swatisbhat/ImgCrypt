@@ -82,6 +82,38 @@ def transposition_index_generation(TBOX, j):
     return TIndex
 
 
+def EvenParity(s):
+    '''
+    Checks if string s has even parity
+    '''
+    count = 0
+    for i in s:
+        if(i == '1'):
+            count += 1
+    if(count % 2 == 0):
+        return True
+    else:
+        return False
+
+def Encrypt(S):
+    for i in range(0, LT - 1):
+        for j in range(0, LT):
+            E[j] = binstr.b_xor(W[j], bin(S[j])[2:].zfill(8))
+    for j in range(0, LT):
+        if(EvenParity(E[j])==True):
+            # define Rotate_Right
+            Rotate_Right(j,SBOX)
+        else:
+            # define Roate_left
+            Rotate_Left(j,SBOX)
+        # check xor
+        SBOX[2][j] = SBOX[2][j]^SrtB[j]
+    # define transpose
+    Transpose(SBOX)
+    # define Rotate_Right for single array
+    Rotate_Right(E)
+
+
 if __name__ == '__main__':
 
             # take user input for key ( >= 16 Bytes )
