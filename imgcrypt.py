@@ -1,6 +1,9 @@
 # libraries used
 import hashlib
 import binstr
+import numpy 
+import os
+import Image
 
 # Block size = 4 bytes
 LT = 4
@@ -95,23 +98,43 @@ def EvenParity(s):
     else:
         return False
 
+def Rotate_Right(j, SBOX):
+    SBOX[j] = list(numpy.roll(SBOX[j], 1))
+
+def Rotate_Left(j, SBOX):
+    SBOX[j] = list(numpy.roll(SBOX[j], -1))
+
+def Transpose(SBOX):
+    SBOX = zip(*SBOX) 
+
+def swap(TBOX, SBOX):
+    TBOX, SBOX = SBOX, TBOX 
+
 def Encrypt(S):
     for i in range(0, LT - 1):
         for j in range(0, LT):
             E[j] = binstr.b_xor(W[j], bin(S[j])[2:].zfill(8))
     for j in range(0, LT):
-        if(EvenParity(E[j])==True):
-            # define Rotate_Right
-            Rotate_Right(j,SBOX)
+        if(EvenParity(E[j]) == True):
+            Rotate_Right(j, SBOX)
         else:
-            # define Roate_left
-            Rotate_Left(j,SBOX)
-        # check xor
-        SBOX[2][j] = SBOX[2][j]^SrtB[j]
-    # define transpose
+            Rotate_Left(j, SBOX)
+        SBOX[2][j] = binstr.b_xor(SBOX[2][j], SrtB[j])
     Transpose(SBOX)
-    # define Rotate_Right for single array
-    Rotate_Right(E)
+    E = list(numpy.roll(E, 1))
+
+    for i in range(0, LT):
+        TIndex = transposition_index_generation(TBOX, i)
+        while(IndexArray[TIndex % N] != 0):
+            TIndex = TIndex + 1
+        TIndex = TIndex % N
+        #write E[i] in encrypted file SE in position of TIndex
+        SE[TIndex] = E[i]
+        IndexArray[TIndex] = 1
+        SrtB[i] = S[i]
+
+    swap(TBOX, SBOX)
+
 
 
 if __name__ == '__main__':
@@ -165,3 +188,31 @@ if __name__ == '__main__':
             # Intermediate output #7
             TIndex1 = transposition_index_generation(TBOX, 3)
             print 'TIndex ( 0 < TIndex < N ) ( N - size of secret file in Bytes ) \n', TIndex1, '\n\n'
+
+            Rotate_Right(1, SBOX)
+            print "SBOX after rotate right ",SBOX
+            Rotate_Left(1, SBOX)
+            print "SBOX after rotate left ",SBOX
+
+            statinfo = os.stat('lena_gray.bmp')
+            N = statinfo.st_size
+
+            IndexArray = [0] * N
+            SrtB = [0] * LT
+            
+            with open("lena_gray.bmp", "rb") as imageFile:
+                f = imageFile.read()
+                S = bytearray(f)
+
+            
+            for i in range(0,N,4):
+                Encrypt(S[i:i+4])
+
+            # encrypted file
+            SE = bytearray(N)
+            image = Image.open(io.BytesIO(SE))
+            image.save(os.path.join(os.getcwd(),"lena-encrypted.bmp"))
+
+            
+            
+            
