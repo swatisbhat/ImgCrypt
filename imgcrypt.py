@@ -140,7 +140,44 @@ def Encrypt(S, SE, SBOX, TBOX, IndexArray, SrtB):
     swap(TBOX, SBOX)
     return SE
 
+'''def Decrypt(SE, SD, SBOX, TBOX, IndexArray, SrtB):
+    E = ['' for i in range(4)]
+    S = ['' for i in range(4)]
 
+    for i in range(0, LT):
+        TIndex = transposition_index_generation(TBOX, i)
+        while(IndexArray[TIndex % N] != 0):
+            TIndex = TIndex + 1
+        TIndex = TIndex % N
+        #write E[i] in encrypted file SE in position of TIndex
+        E[i] = SE[TIndex]
+        IndexArray[TIndex] = 1
+
+
+    for i in range(0, LT - 1):
+        for j in range(0, LT):
+            #E[j] = binstr.b_xor(W[j], S[j])
+            S[j] = binstr.b_xor(W[j],E[j])
+        for j in range(0, LT):
+            if(EvenParity(E[j]) == True):
+                Rotate_Right(j, SBOX)
+            else:
+                Rotate_Left(j, SBOX)
+                
+
+            SBOX[2][j] = binstr.b_xor(SBOX[2][j], bin(SrtB[j])[2:].zfill(8))
+        
+        S = [str(x) for x in numpy.roll(S, 1)]
+        Transpose(SBOX)
+
+    for i in range(LT):
+        SD.append(int(S[i],2))
+        SrtB[i] = int(S[i],2)
+
+    swap(TBOX, SBOX)
+
+    return SD
+'''
 if __name__ == '__main__':
 
             # take user input for key ( >= 16 Bytes )
@@ -229,6 +266,27 @@ if __name__ == '__main__':
 
             
             #try using imageio
+
+            ################ #decryption ################
+'''
+            f = numpy.array(Image.open('encrypted_image.bmp'))
+            shape1 = f.shape
+            f = f.reshape((1,shape1[0]*shape1[1]))
+            SE = [bin(x)[2:].zfill(8) for x in f[0]]
+
+            N = len(S)
+
+            IndexArray = [0] * N
+            SrtB = [0] * LT
+
+            SD = bytearray(N)
+
+            for i in range(0,N,4):
+                SD = Decrypt(SE[i:i+4], SD, SBOX, TBOX, IndexArray, SrtB)
+
+            SD = numpy.array(SD).reshape(shape1)
+            scipy.misc.imsave('decrypted_image.bmp',SD)
+'''
 
 
             #e_image_in_bits = str(''.join(SE))
