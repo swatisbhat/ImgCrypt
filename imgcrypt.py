@@ -4,8 +4,8 @@ import binstr
 import numpy 
 import os
 import Image
-import io
-import base64
+import scipy.misc
+
 
 # Block size = 4 bytes
 LT = 4
@@ -200,8 +200,10 @@ if __name__ == '__main__':
 
             input_image = raw_input('Enter image path : ')
             
-            f = open(input_image,'rb').read()
-            S = [bin(x)[2:].zfill(8) for x in bytearray(f)]
+            f = numpy.array(Image.open(input_image))
+            shape1 = f.shape
+            f = f.reshape((1,shape1[0]*shape1[1]))
+            S = [bin(x)[2:].zfill(8) for x in f[0]]
 
             N = len(S)
 
@@ -220,14 +222,21 @@ if __name__ == '__main__':
             for i in range(0,N,4):
                 SE = Encrypt(S[i:i+4], SE, SBOX, TBOX, IndexArray, SrtB)
             
-            SE = [bin(x)[2:].zfill(8) for x in SE]
-           
-            e_image_in_bits = str(''.join(SE))
-            e_image_in_base64 = base64.b64encode(e_image_in_bits)
+            #SE = [bin(x)[2:].zfill(8) for x in SE]
+            SE = numpy.array(SE).reshape(shape1)           
+            scipy.misc.imsave('encrypted_image.bmp',SE)
 
-            encrypted_image = open('encrypted_image.bmp','wb')
-            encrypted_image.write(e_image_in_base64.decode('base64'))
-            encrypted_image.close()
+
+            
+            #try using imageio
+
+
+            #e_image_in_bits = str(''.join(SE))
+            #e_image_in_base64 = base64.b64encode(e_image_in_bits)
+
+            #encrypted_image = open('encrypted_image.bmp','wb')
+            #encrypted_image.write(e_image_in_base64.decode('base64'))
+            #encrypted_image.close()
             
             #encrypted_image = Image.open(io.BytesIO(SE))
             #encrypted_image.save(os.path.join(os.getcwd(),'encrypted_image.bmp'))
