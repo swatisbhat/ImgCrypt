@@ -3,9 +3,9 @@ import hashlib
 import binstr
 import numpy 
 import os
-import Image
+from PIL import Image
 import scipy.misc
-
+import re
 
 # Block size = 4 bytes
 LT = 4
@@ -107,9 +107,6 @@ def Rotate_Left(j, SBOX):
 def Transpose(SBOX):
     SBOX = zip(*SBOX) 
 
-def swap(TBOX, SBOX):
-    TBOX, SBOX = SBOX, TBOX 
-
 def Encrypt(S, SE, SBOX, TBOX, IndexArray, SrtB):
     E = ['' for i in range(4)]
     for i in range(0, LT - 1):
@@ -137,8 +134,8 @@ def Encrypt(S, SE, SBOX, TBOX, IndexArray, SrtB):
         IndexArray[TIndex] = 1
         SrtB[i] = int(S[i],2)
 
-    swap(TBOX, SBOX)
-    return SE
+    SBOX, TBOX = TBOX, SBOX
+    return SE, SBOX, TBOX
 
 '''def Decrypt(SE, SD, SBOX, TBOX, IndexArray, SrtB):
     E = ['' for i in range(4)]
@@ -236,7 +233,9 @@ if __name__ == '__main__':
             # print "SBOX after rotate left ",SBOX
 
             input_image = raw_input('Enter image path : ')
-            
+            image_file_name = re.search('.*/(.*)',input_image).group(1)
+
+
             f = numpy.array(Image.open(input_image))
             shape1 = f.shape
             f = f.reshape((1,shape1[0]*shape1[1]))
@@ -256,13 +255,16 @@ if __name__ == '__main__':
             # encrypted file
             SE = bytearray(N)
 
+            #print 'It -1 \nSBOX\n{}\n{}\n{}\n{}\nTBOX\n{}\n{}\n{}\n{}\n'.format(SBOX[0],SBOX[1],SBOX[2],SBOX[3],TBOX[0],TBOX[1],TBOX[2],TBOX[3])
             for i in range(0,N,4):
-                SE = Encrypt(S[i:i+4], SE, SBOX, TBOX, IndexArray, SrtB)
-            
+                SE, SBOX, TBOX = Encrypt(S[i:i+4], SE, SBOX, TBOX, IndexArray, SrtB)
+                #if i < 5:
+                #    print 'It{}\nSBOX\n{}\n{}\n{}\n{}\nTBOX\n{}\n{}\n{}\n{}\n'.format(i,SBOX[0],SBOX[1],SBOX[2],SBOX[3],TBOX[0],TBOX[1],TBOX[2],TBOX[3])
+
             #SE = [bin(x)[2:].zfill(8) for x in SE]
             SE = numpy.array(SE).reshape(shape1)           
-            scipy.misc.imsave('encrypted_image.bmp',SE)
-
+            scipy.misc.imsave(os.path.join(os.getcwd(),'encrypted_images/') + image_file_name, SE)
+            
 
             
             #try using imageio
