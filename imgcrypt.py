@@ -20,8 +20,21 @@ W = [bin(0)[2:].zfill(8) for x in range(4)]
 # Key used to generate SBOX and TBOX
 Eky = ['' for i in range(32)]
 
+# Key used to generate SBOX and TBOX for decryption
+Eky_d = ['' for i in range(32)]
+
+# SBOX and TBOX Initialisation for decryption
+SBOX_d = [['' for i in range(LT)] for j in range(LT)]
+TBOX_d = [['' for i in range(LT)] for j in range(LT)]
+
+# Word array initialisation for decryption
+W_d = [bin(0)[2:].zfill(8) for x in range(4)]
+
 # User input key ( >= 16 Bytes )
 Ky = []
+
+# User input key for decryption
+Ky_d = []
 
 def encryption_key_gen(EKy, Ky, D):
     '''
@@ -137,18 +150,33 @@ def Encrypt(S, SE, SBOX, TBOX, IndexArray, SrtB):
     SBOX, TBOX = TBOX, SBOX
     return SE, SBOX, TBOX
 
-'''def Decrypt(SE, SD, SBOX, TBOX, IndexArray, SrtB):
+
+def Decrypt(SE, SD, SBOX_d, TBOX_d, IndexArray_d, SrtB_d, Ky_d):
+    L1 = len(Ky_d)
+    digest_string_in_hex = hashlib.md5(Ky).hexdigest()
+    digest_string = bytearray.fromhex(digest_string_in_hex)
+    D = [bin(x)[2:].zfill(8) for x in digest_string]
+    Eky1_d = encryption_key_gen(Eky_d, Ky_d, D)
+    SBOX_generation(SBOX_d, Eky1_d)
+
+    # calculate total number of bytes in image SE = N_d
+
+    IndexArray_d = [0] * N_d
+    SrtB_d = [0] * LT_d
+
+    WORD_generation(SBOX_d, W_d) 
+
     E = ['' for i in range(4)]
     S = ['' for i in range(4)]
 
     for i in range(0, LT):
-        TIndex = transposition_index_generation(TBOX, i)
-        while(IndexArray[TIndex % N] != 0):
+        TIndex = transposition_index_generation(TBOX_d, i)
+        while(IndexArray_d[TIndex % N_d] != 0):
             TIndex = TIndex + 1
-        TIndex = TIndex % N
+        TIndex = TIndex % N_d
         #write E[i] in encrypted file SE in position of TIndex
         E[i] = SE[TIndex]
-        IndexArray[TIndex] = 1
+        IndexArray_d[TIndex] = 1
 
 
     for i in range(0, LT - 1):
@@ -174,7 +202,8 @@ def Encrypt(S, SE, SBOX, TBOX, IndexArray, SrtB):
     swap(TBOX, SBOX)
 
     return SD
-'''
+
+
 if __name__ == '__main__':
 
             # take user input for key ( >= 16 Bytes )
@@ -270,6 +299,10 @@ if __name__ == '__main__':
             #try using imageio
 
             ################ #decryption ################
+
+
+
+
 '''
             f = numpy.array(Image.open('encrypted_image.bmp'))
             shape1 = f.shape
