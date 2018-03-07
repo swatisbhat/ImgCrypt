@@ -20,21 +20,8 @@ W = [bin(0)[2:].zfill(8) for x in range(4)]
 # Key used to generate SBOX and TBOX
 Eky = ['' for i in range(32)]
 
-# Key used to generate SBOX and TBOX for decryption
-Eky_d = ['' for i in range(32)]
-
-# SBOX and TBOX Initialisation for decryption
-SBOX_d = [['' for i in range(LT)] for j in range(LT)]
-TBOX_d = [['' for i in range(LT)] for j in range(LT)]
-
-# Word array initialisation for decryption
-W_d = [bin(0)[2:].zfill(8) for x in range(4)]
-
 # User input key ( >= 16 Bytes )
 Ky = []
-
-# User input key for decryption
-Ky_d = []
 
 def encryption_key_gen(EKy, Ky, D):
     '''
@@ -120,7 +107,7 @@ def Rotate_Left(j, SBOX):
 def Transpose(SBOX):
     SBOX = zip(*SBOX) 
 
-def Encrypt(S, SE, SBOX, TBOX, IndexArray, SrtB):
+def Encrypt(k, S, SE, SBOX, TBOX, IndexArray, SrtB):
     E = ['' for i in range(4)]
     for i in range(0, LT - 1):
         for j in range(0, LT):
@@ -135,54 +122,53 @@ def Encrypt(S, SE, SBOX, TBOX, IndexArray, SrtB):
             SBOX[2][j] = binstr.b_xor(SBOX[2][j], bin(SrtB[j])[2:].zfill(8))
 
         Transpose(SBOX)
-        E = [str(x) for x in numpy.roll(E, 1)]
+    E = [str(x) for x in numpy.roll(E, 1)]
 
     for i in range(0, LT):
         TIndex = transposition_index_generation(TBOX, i)
+        #if k==0:
+        #    print "E:",TIndex
         while(IndexArray[TIndex % N] != 0):
             TIndex = TIndex + 1
         TIndex = TIndex % N
+        #if k==0:
+        #    print TIndex
+        #    print "E[i] {}".format(int(E[i],2))
         #write E[i] in encrypted file SE in position of TIndex
         SE[TIndex] = int(E[i],2)
         IndexArray[TIndex] = 1
         SrtB[i] = int(S[i],2)
 
     SBOX, TBOX = TBOX, SBOX
+    #if k==0:
+    #    print " E \n SBOX {}\n TBOX {}".format(SBOX,TBOX)
     return SE, SBOX, TBOX
 
 
-def Decrypt(SE, SD, SBOX_d, TBOX_d, IndexArray_d, SrtB_d, Ky_d):
-    L1 = len(Ky_d)
-    digest_string_in_hex = hashlib.md5(Ky).hexdigest()
-    digest_string = bytearray.fromhex(digest_string_in_hex)
-    D = [bin(x)[2:].zfill(8) for x in digest_string]
-    Eky1_d = encryption_key_gen(Eky_d, Ky_d, D)
-    SBOX_generation(SBOX_d, Eky1_d)
-
-    # calculate total number of bytes in image SE = N_d
-
-    IndexArray_d = [0] * N_d
-    SrtB_d = [0] * LT_d
-
-    WORD_generation(SBOX_d, W_d) 
+def Decrypt(SE_N, front_index, SE, SD, SBOX, TBOX, IndexArray, SrtB):
 
     E = ['' for i in range(4)]
     S = ['' for i in range(4)]
 
     for i in range(0, LT):
-        TIndex = transposition_index_generation(TBOX_d, i)
-        while(IndexArray_d[TIndex % N_d] != 0):
+        TIndex = transposition_index_generation(TBOX, i)
+        while(IndexArray[TIndex % N] != 0):
             TIndex = TIndex + 1
-        TIndex = TIndex % N_d
+        TIndex = TIndex % N
+        #print i, TIndex, len(SE)
         #write E[i] in encrypted file SE in position of TIndex
-        E[i] = SE[TIndex]
-        IndexArray_d[TIndex] = 1
+        E[i] = SE_N[TIndex]
+        #print "E[i] {}".format(E[i])
+        IndexArray[TIndex] = 1
 
 
+    E = [str(x) for x in numpy.roll(E, -1)]
     for i in range(0, LT - 1):
+
         for j in range(0, LT):
-            #E[j] = binstr.b_xor(W[j], S[j])
             S[j] = binstr.b_xor(W[j],E[j])
+            # print "S[j] {} W[j] {} E[j] {}".format(S[j],W[j],E[j])
+
         for j in range(0, LT):
             if(EvenParity(E[j]) == True):
                 Rotate_Right(j, SBOX)
@@ -192,16 +178,17 @@ def Decrypt(SE, SD, SBOX_d, TBOX_d, IndexArray_d, SrtB_d, Ky_d):
 
             SBOX[2][j] = binstr.b_xor(SBOX[2][j], bin(SrtB[j])[2:].zfill(8))
         
-        S = [str(x) for x in numpy.roll(S, 1)]
         Transpose(SBOX)
-
+    
     for i in range(LT):
-        SD.append(int(S[i],2))
+        # print i,S[i]
+        SD[front_index+i] = int(S[i],2)
         SrtB[i] = int(S[i],2)
 
-    swap(TBOX, SBOX)
 
-    return SD
+    SBOX, TBOX = TBOX, SBOX
+    # print "D \n SBOX {}\n TBOX {}".format(SBOX,TBOX)
+    return SD, SBOX, TBOX
 
 
 if __name__ == '__main__':
@@ -251,15 +238,9 @@ if __name__ == '__main__':
             # Intermediate output #6
             WORD_generation(SBOX, W)
             print 'WORD ( 1 x LT ) ( LT = 4 )\n', W, '\n\n'
+            
 
-            # Intermediate output #7
-            # TIndex1 = transposition_index_generation(TBOX, 3)
-            # print 'TIndex ( 0 < TIndex < N ) ( N - size of secret file in Bytes ) \n', TIndex1, '\n\n'
-
-            # Rotate_Right(1, SBOX)
-            # print "SBOX after rotate right ",SBOX
-            # Rotate_Left(1, SBOX)
-            # print "SBOX after rotate left ",SBOX
+            ################### Encryption ###########################
 
             input_image = raw_input('Enter image path : ')
             image_file_name = re.search('.*/(.*)',input_image).group(1)
@@ -284,55 +265,45 @@ if __name__ == '__main__':
             # encrypted file
             SE = bytearray(N)
 
-            #print 'It -1 \nSBOX\n{}\n{}\n{}\n{}\nTBOX\n{}\n{}\n{}\n{}\n'.format(SBOX[0],SBOX[1],SBOX[2],SBOX[3],TBOX[0],TBOX[1],TBOX[2],TBOX[3])
             for i in range(0,N,4):
-                SE, SBOX, TBOX = Encrypt(S[i:i+4], SE, SBOX, TBOX, IndexArray, SrtB)
-                #if i < 5:
-                #    print 'It{}\nSBOX\n{}\n{}\n{}\n{}\nTBOX\n{}\n{}\n{}\n{}\n'.format(i,SBOX[0],SBOX[1],SBOX[2],SBOX[3],TBOX[0],TBOX[1],TBOX[2],TBOX[3])
-
-            #SE = [bin(x)[2:].zfill(8) for x in SE]
+                SE, SBOX, TBOX = Encrypt(i, S[i:i+4], SE, SBOX, TBOX, IndexArray, SrtB)
+            
             SE = numpy.array(SE).reshape(shape1)           
-            scipy.misc.imsave(os.path.join(os.getcwd(),'encrypted_images/') + image_file_name, SE)
+            save_path = os.path.join(os.getcwd(),'encrypted_images/') + image_file_name
+            scipy.misc.imsave(save_path, SE)
             
 
             
             #try using imageio
 
-            ################ #decryption ################
+            ################ Decryption ################
+            
+            user_input_key = bytearray(raw_input("Enter decryption key >=16 bytes: "))
+            Ky = [bin(x)[2:].zfill(8) for x in user_input_key]
+            digest_string_in_hex = hashlib.md5(user_input_key).hexdigest()
+            digest_string = bytearray.fromhex(digest_string_in_hex)
+            D = [bin(x)[2:].zfill(8) for x in digest_string]
+            Eky1 = encryption_key_gen(Eky, Ky, D)
+            SBOX_generation(SBOX, Eky1)
+            TBOX_generation(TBOX, Eky1)
 
-
-
-
-'''
-            f = numpy.array(Image.open('encrypted_image.bmp'))
+            f = numpy.array(Image.open(save_path))
             shape1 = f.shape
             f = f.reshape((1,shape1[0]*shape1[1]))
             SE = [bin(x)[2:].zfill(8) for x in f[0]]
 
-            N = len(S)
-
+            N = len(SE)
+            print N 
             IndexArray = [0] * N
             SrtB = [0] * LT
 
             SD = bytearray(N)
-
             for i in range(0,N,4):
-                SD = Decrypt(SE[i:i+4], SD, SBOX, TBOX, IndexArray, SrtB)
-
+                SD, SBOX, TBOX = Decrypt(SE,i, SE[i:i+4], SD, SBOX, TBOX, IndexArray, SrtB)
             SD = numpy.array(SD).reshape(shape1)
-            scipy.misc.imsave('decrypted_image.bmp',SD)
-'''
-
-
-            #e_image_in_bits = str(''.join(SE))
-            #e_image_in_base64 = base64.b64encode(e_image_in_bits)
-
-            #encrypted_image = open('encrypted_image.bmp','wb')
-            #encrypted_image.write(e_image_in_base64.decode('base64'))
-            #encrypted_image.close()
+            save_path_d = os.path.join(os.getcwd(),'decrypted_images/') + image_file_name
+            scipy.misc.imsave(save_path_d, SD)
             
-            #encrypted_image = Image.open(io.BytesIO(SE))
-            #encrypted_image.save(os.path.join(os.getcwd(),'encrypted_image.bmp'))
 
 
             
