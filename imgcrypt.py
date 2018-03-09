@@ -3,7 +3,6 @@ import hashlib
 import binstr
 import numpy 
 import os
-from PIL import Image
 import scipy.misc
 import re
 
@@ -243,20 +242,23 @@ if __name__ == '__main__':
             ################### Encryption ###########################
 
             input_image = raw_input('Enter image path : ')
-            image_file_name = re.search('.*/(.*)',input_image).group(1)
+            image_file_name = re.search('(.*/)*(.*)',input_image).group(2)
 
-
-            f = numpy.array(Image.open(input_image))
+            f = scipy.misc.imread(input_image)
+            #f = numpy.array(Image.open(input_image))
             shape1 = f.shape
-            f = f.reshape((1,shape1[0]*shape1[1]))
+            if len(shape1) == 2:
+                f = f.reshape((1,shape1[0]*shape1[1]))
+            else:
+                f = f.reshape((1,shape1[0]*shape1[1]*shape1[2]))
             S = [bin(x)[2:].zfill(8) for x in f[0]]
 
             N = len(S)
 
             #padding
-            while(N % LT != 0):
-                S.extend('00000000')
-                N = N + 1
+            #while(N % LT != 0):
+            #    S.extend('00000000')
+            #    N = N + 1
 
             print 'N = ',N
             IndexArray = [0] * N
@@ -287,9 +289,13 @@ if __name__ == '__main__':
             SBOX_generation(SBOX, Eky1)
             TBOX_generation(TBOX, Eky1)
 
-            f = numpy.array(Image.open(save_path))
+            f = scipy.misc.imread(save_path)
+            #f = numpy.array(Image.open(save_path))
             shape1 = f.shape
-            f = f.reshape((1,shape1[0]*shape1[1]))
+            if len(shape1) == 2:
+                f = f.reshape((1,shape1[0]*shape1[1]))
+            else:
+                f = f.reshape((1,shape1[0]*shape1[1]*shape1[2]))
             SE = [bin(x)[2:].zfill(8) for x in f[0]]
 
             N = len(SE)
