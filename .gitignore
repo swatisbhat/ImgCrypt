@@ -1,2 +1,4 @@
-test.py
 .DS_Store
+/cleanup
+test.py
+

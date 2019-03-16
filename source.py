@@ -271,7 +271,7 @@ if __name__ == '__main__':
                 SE, SBOX, TBOX = Encrypt(i, S[i:i+4], SE, SBOX, TBOX, IndexArray, SrtB)
             
             SE = numpy.array(SE).reshape(shape1)           
-            save_path = os.path.join(os.getcwd(),'encrypted_images/') + image_file_name
+            save_path = os.path.join(os.getcwd(),'15IT249_M2_encrypted_images/') + image_file_name
             scipy.misc.imsave(save_path, SE)
             
 
@@ -307,7 +307,7 @@ if __name__ == '__main__':
             for i in range(0,N,4):
                 SD, SBOX, TBOX = Decrypt(SE,i, SE[i:i+4], SD, SBOX, TBOX, IndexArray, SrtB)
             SD = numpy.array(SD).reshape(shape1)
-            save_path_d = os.path.join(os.getcwd(),'decrypted_images/') + image_file_name
+            save_path_d = os.path.join(os.getcwd(),'15IT249_M2_decrypted_images/') + image_file_name
             scipy.misc.imsave(save_path_d, SD)
             
 
